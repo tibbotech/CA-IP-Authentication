@@ -1,0 +1,4 @@
+'This file is for global definitions (that is, if you gonna have any)
+
+declare function ipLookUp(sockip as string) as boolean
+declare authPass as boolean

@@ -1,0 +1,107 @@
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' This program demonstrates how to use a look-up table that contains allowed IP to filter out the unwanted 
+' connections.  When a connection is from an IP address that's not on the look-up table the data will be
+' dropped and no reply will be given to the sender.  There's also an option to close the connection (recommended).
+'
+' When editing the look-up table, the IP addresses are separated by a comma ",".  Please remember to add a final
+' comma or a carriage return to the end of the list or else the program will not know that it is at the end of
+' the file.
+'
+'RD.05092007
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+include "global.tbh"
+
+
+' Put your BASIC code here
+
+sub on_sys_init
+	'Setup serial port
+	ser.num = 0
+	ser.rxbuffrq(2)
+	ser.txbuffrq(2)
+	ser.baudrate=ser.div9600/(38400/9600) 	'38400 <<<<<<<<<<<<<<<<<<< CHANGE AS NEEDED
+	ser.bits=PL_SER_BB_8					'<<<<<<<<<<<<<<<<<<<<<<<<< CHANGE AS NEEDED
+	ser.parity=PL_SER_PR_NONE				'<<<<<<<<<<<<<<<<<<<<<<<<< CHANGE AS NEEDED
+	ser.flowcontrol=DISABLED				'<<<<<<<<<<<<<<<<<<<<<<<<< CHANGE AS NEEDED
+	ser.interface=PL_SER_SI_FULLDUPLEX		'<<<<<<<<<<<<<<<<<<<<<<<<< CHANGE AS NEEDED
+	
+	
+	'Setup the Netowrk Socket
+	sock.num = 0										
+	sock.protocol = PL_SOCK_PROTOCOL_TCP
+	sock.txbuffrq(2)
+	sock.rxbuffrq(2)
+	sock.localportlist = "1001"
+	sock.inconmode = PL_SOCK_INCONMODE_ANY_IP_ANY_PORT
+	sock.reconmode = PL_SOCK_RECONMODE_3
+	sys.buffalloc
+	
+	'enable serial port after buffer allocation
+	ser.enabled=YES
+	
+	
+	'Setup the Device Server's network information		
+	net.gatewayip = "192.168.1.1"  	'<----------- you may need to change this
+	net.netmask = "255.255.255.0"	'<----------- you may need to change this
+	net.ip = "192.168.1.211" 		'<----------- you may need to change this
+	
+end sub
+
+sub on_sock_data_arrival
+		
+	dim sockip as string
+	dim authPass as boolean
+	
+	sockip = ddval(sock.remoteip)
+	authPass = ipLookUp(sockip)
+	
+	if authPass = true then
+	
+		ser.num=0
+		ser.setdata(sock.getdata(ser.txfree))
+		ser.send
+	else
+		sock.rxclear 
+		sock.close 		'enable this if you want to terminate the connection, disable if you just want the data to be dropped
+	end if
+
+end sub
+
+function ipLookUp(sockip as string) as boolean
+
+	dim ip as string
+	dim ipChar as string(1)
+	dim y as byte
+	dim auth as boolean
+	romfile.open("iptable.txt")
+	y = 0
+	
+	do while romfile.pointer < romfile.size
+		
+		ipChar = ""
+		ip = ""
+		
+		do while ipChar <> "," and romfile.pointer < romfile.size
+		
+			ipChar = romfile.getdata(1)
+			ip = ip + ipChar
+		loop
+			
+		ip = ddval(ip)
+			
+		if ip = sockip then
+		
+			ipLookUp = true
+			exit function
+		
+		else
+			
+			ipLookUp = false
+		
+		end if
+
+	loop
+
+
+end function
