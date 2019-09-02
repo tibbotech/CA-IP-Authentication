@@ -1,5 +1,3 @@
-# CA-IP-Authentication
+# IP-based Access Control using Lookup Table
 
-To download the most recent project without installing GIT, please press the green "Clone or Download" button and select "Download ZIP".
-
-For more detail about this project, please visit <a href="http://tibbo.com/programmable/applications/examples/access_control.html" target="_blank">Project Description Page</a>
+This Access Control demo uses an IP Look-up table to determine if a connection should be allowed. Connections that are not allowed are dropped, an easy but effective way to make your DS selectively inaccessible.
